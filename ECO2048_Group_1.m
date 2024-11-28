@@ -62,7 +62,7 @@ for k = 1:size(pairs, 1)
     j = codeToIndex(original_j);
     
     if i ~= j  % Ensure no self-trade is counted
-        A(i, j) = 0;
+        A(i, j) = 1;
     end
 end
 
