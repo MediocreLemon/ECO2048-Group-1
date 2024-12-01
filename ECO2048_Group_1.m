@@ -3,6 +3,7 @@ clear all
 %% 1 - Randomly select 10 countries from the data provided
 rng(1,'twister') % sets the random seed to the group number
 load 'available_countries.mat' % loads the list of available countries to choose from
+
 idx = randsample(numel(available_countries),10); % creates an array with ten random numbers from 1 to the length of the available countries array
 selectedCountries = available_countries(idx); % associates the 10 random numbers with the corresponding country codes
 
@@ -22,8 +23,7 @@ end
 
 % Create a table to store the data
 tradeData = table(adjustedData.i, adjustedData.j, adjustedData.k, adjustedData.v, 'VariableNames', {'Origin', 'Destination', 'Product Code', 'Value'}); 
-%technically redudant, but keeps the variable seperate and introduces
-%cleaner variable names
+%technically redudant, but keeps the variable seperate and introduces cleaner variable names
  
 % create a matrix of all unique pairs of exporters and importers
 pairs = unique([adjustedData.i, adjustedData.j], 'rows');
@@ -70,10 +70,16 @@ disp(A) %Displays A, a 10x10 matrix representing trade realtionships between sel
 
 %% 7 - Plot graph corresponding to A
 
+%messy way to associate the selected codes to their names
+tempCountryData = readtable('country_codes_V202401b.csv');
+tempCodes = tempCountryData.country_code;
+tempNames = tempCountryData.country_name;
+countryNames = tempNames(ismember(tempCodes, selectedCountries));
+
 G = digraph(A); %creates graph object
 
 figure;
-p = plot(G, 'layout', 'force', 'NodeLabel',selectedCountries);
+p = plot(G, 'layout', 'force', 'NodeLabel', countryNames);
 % Node = Selected Countries (in order of selection, i.e 258 = node 1)
 % Edge represents the in-degree and out-degree for each node (import,export)
 
@@ -84,8 +90,38 @@ p.MarkerSize = 6; % Sets size of the NodeMarker
 p.EdgeColor = 'b'; % Sets the colour of the edge to 'blue'
 
 
+
 %% 8 calculating out-degree
 
-OutDegree = sum(A, 2); % calculates the out-degree for exporting countries
+outDegree = sum(A, 2); % calculates the out-degree for exporting countries
 % i.e. i = 258, out-degree = 5 means exports to 5/9 other countries in the model
+
+
+%% 9 - construct a transition matrix P
+
+%pre-allocate the size of p
+P = zeros(size(A));
+
+%loops through every element in P 
+for j = 1:size(A,2)
+    if outDegree(j) ~= 0 % if the countries do trade
+        P(:,j) = A(:,j)/outDegree(j); %sets the value of P(i,j)
+    end
+end
+
+    
+%% 10 - find the dominant eigenvector of P, and 3 closest
+%dominant eigvec
+[V, D] = eig(P);
+[~,idx] = max(diag(D));
+dominantEigVec = V(:,idx);
+
+%3 central eigvec
+
+eigVals = diag(D);
+[~, idx] = sort(abs(eigVals), 'descend');  % sorts in size descending
+centralEigVec = V(:,idx(1:3));
+
+disp (dominantEigVec)
+disp (centralEigVec)
 
